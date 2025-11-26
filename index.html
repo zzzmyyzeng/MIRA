@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MIRA: Multimodal Iterative Reasoning Agent for Image Editing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="MIRA: a lightweight multimodal iterative reasoning agent for complex instruction-guided image editing."
+  />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --card: #10162a;
+      --accent: #4f46e5;
+      --accent-soft: rgba(79, 70, 229, 0.18);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --radius-lg: 18px;
+      --radius-xl: 26px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%, #000 100%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 14px;
+    }
+
+    .page {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    /* Top nav */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 4px 18px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(
+        to bottom,
+        rgba(2, 6, 23, 0.94),
+        rgba(2, 6, 23, 0.8),
+        transparent
+      );
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-pill {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #a5b4fc, #4f46e5);
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6),
+        0 10px 25px rgba(15, 23, 42, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #e5e7eb;
+    }
+
+    .nav-title-main {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #9ca3af;
+    }
+
+    .nav-title-sub {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .nav-link {
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(55, 65, 81, 0.8);
+      color: #9ca3af;
+      transition: all 0.18s ease;
+      cursor: pointer;
+    }
+
+    .nav-link:hover {
+      background: rgba(30, 64, 175, 0.4);
+      border-color: rgba(129, 140, 248, 0.9);
+      color: #e5e7eb;
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.4);
+    }
+
+    /* Hero */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.4fr);
+      gap: 26px;
+      margin-top: 14px;
+      margin-bottom: 32px;
+      align-items: center;
+    }
+
+    .hero-left {
+      padding-right: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #a5b4fc;
+      border: 1px solid rgba(129, 140, 248, 0.55);
+      background: radial-gradient(circle at left, #1e293b, #020617);
+      box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.95);
+      margin-bottom: 9px;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.15);
+    }
+
+    .hero-title {
+      font-size: clamp(26px, 3.1vw, 32px);
+      line-height: 1.15;
+      font-weight: 750;
+      letter-spacing: 0.01em;
+      margin-bottom: 10px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(120deg, #a5b4fc, #22d3ee, #f97316);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      color: var(--muted);
+      max-width: 620px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .hero-meta {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 18px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 15px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: radial-gradient(circle at top left, #6366f1, #4f46e5);
+      border-color: rgba(191, 219, 254, 0.4);
+      color: #e5e7eb;
+      box-shadow: 0 18px 38px rgba(15, 23, 42, 0.8);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 22px 50px rgba(15, 23, 42, 0.85);
+      filter: brightness(1.06);
+    }
+
+    .btn-ghost {
+      background: rgba(15, 23, 42, 0.85);
+      border-color: rgba(55, 65, 81, 0.9);
+      color: #d1d5db;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(129, 140, 248, 0.95);
+      background: rgba(30, 64, 175, 0.45);
+      color: #e5e7eb;
+      box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.4);
+    }
+
+    .hero-note {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .hero-right {
+      background: radial-gradient(circle at top left, #111827, #020617);
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(31, 41, 55, 0.95);
+      padding: 14px 14px 16px;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-tag {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-bottom: 4px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .hero-card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #e5e7eb;
+    }
+
+    .grid-mini {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-card {
+      background: rgba(15, 23, 42, 0.95);
+      border-radius: 14px;
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      padding: 8px 9px;
+      font-size: 11px;
+      color: #9ca3af;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mini-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #6b7280;
+      margin-bottom: 3px;
+    }
+
+    .mini-value {
+      font-size: 11px;
+      color: #e5e7eb;
+    }
+
+    .mini-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(30, 64, 175, 0.45);
+      border: 1px solid rgba(96, 165, 250, 0.7);
+      font-size: 10px;
+      color: #dbeafe;
+      margin-top: 5px;
+    }
+
+    .hero-orbit {
+      position: absolute;
+      inset: auto -20px -36px auto;
+      width: 220px;
+      height: 58px;
+      background: radial-gradient(circle at top, rgba(59, 130, 246, 0.7), transparent);
+      opacity: 0.6;
+      filter: blur(18px);
+      pointer-events: none;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 32px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 650;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title span {
+      font-size: 18px;
+    }
+
+    .section-subtitle {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 14px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #020617, #020617);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 16px 18px;
+      box-shadow: 0 16px 35px rgba(0, 0, 0, 0.55);
+    }
+
+    .card + .card {
+      margin-top: 14px;
+    }
+
+    p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0 0 8px;
+    }
+
+    ul {
+      padding-left: 18px;
+      margin: 6px 0 8px;
+    }
+
+    li {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: rgba(15, 23, 42, 0.88);
+      padding: 2px 5px;
+      border-radius: 5px;
+      border: 1px solid rgba(31, 41, 55, 0.8);
+    }
+
+    pre {
+      margin: 8px 0 4px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      overflow-x: auto;
+    }
+
+    pre code {
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 12px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .taglist {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(17, 24, 39, 0.95);
+      border: 1px solid rgba(31, 41, 55, 0.9);
+      color: #9ca3af;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .metric {
+      border-radius: 13px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(31, 41, 55, 0.95);
+      padding: 9px 10px;
+      font-size: 11px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 2px;
+    }
+
+    .metric-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e5e7eb;
+    }
+
+    .metric-desc {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 1px;
+    }
+
+    .footer {
+      margin-top: 40px;
+      font-size: 11px;
+      color: #4b5563;
+      text-align: center;
+    }
+
+    .footer a {
+      color: #9ca3af;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+
+    @media (max-width: 880px) {
+      .hero {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .hero-left {
+        padding-right: 0;
+      }
+
+      .hero-right {
+        order: -1;
+      }
+
+      .two-col {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .page {
+        padding-inline: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="nav">
+      <div class="nav-left">
+        <div class="nav-pill">M</div>
+        <div>
+          <div class="nav-title-main">MIRA</div>
+          <div class="nav-title-sub">Multimodal Iterative Reasoning Agent</div>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a class="nav-link" href="#abstract">Abstract</a>
+        <a class="nav-link" href="#highlights">Highlights</a>
+        <a class="nav-link" href="#framework">Framework</a>
+        <a class="nav-link" href="#dataset">Dataset</a>
+        <a class="nav-link" href="#results">Results</a>
+        <a class="nav-link" href="#bibtex">BibTeX</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-left">
+          <div class="badge">
+            <span class="badge-dot"></span>
+            <span>Instruction-guided Image Editing • Open-Source Agent</span>
+          </div>
+          <h1 class="hero-title">
+            MIRA: <span>Multimodal Iterative Reasoning Agent</span> for Image Editing
+          </h1>
+          <p class="hero-meta">
+            Ziyun Zeng, Hang Hua, Jiebo Luo · University of Rochester · MIT-IBM Watson AI Lab
+          </p>
+          <p class="hero-subtitle">
+            MIRA reframes image editing as an iterative perception–reasoning–action loop. It
+            decomposes complex natural-language instructions into atomic edits and orchestrates
+            open-source diffusion models step by step, improving semantic consistency and perceptual
+            quality over both open-source and proprietary baselines.
+          </p>
+
+          <div class="hero-buttons">
+            <!-- TODO: replace href with real links -->
+            <a class="btn btn-primary" href="https://arxiv.org/" target="_blank" rel="noreferrer">
+              📄 Paper (arXiv)
+            </a>
+            <a class="btn btn-ghost" href="https://github.com/" target="_blank" rel="noreferrer">
+              💻 Code (GitHub)
+            </a>
+            <a class="btn btn-ghost" href="#results">
+              📊 Benchmark & Results
+            </a>
+          </div>
+          <div class="hero-note">
+            This is a temporary project page. Replace the placeholder links with the official arXiv
+            and GitHub URLs when ready.
+          </div>
+        </div>
+
+        <aside class="hero-right" aria-label="MIRA at a glance">
+          <div class="hero-tag">AT A GLANCE</div>
+          <div class="hero-card-title">Complex image editing made iterative and controllable.</div>
+          <div class="grid-mini">
+            <div class="mini-card">
+              <div class="mini-label">Paradigm</div>
+              <div class="mini-value">Perception → Reasoning → Action loop</div>
+              <div class="mini-chip">Closed-loop agentic reasoning</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">Backbones</div>
+              <div class="mini-value">Flux.1-Kontext · Step1X-Edit · Qwen-Image-Edit</div>
+              <div class="mini-chip">Plug-and-play</div>
+            </div>
+            <div class="mini-card">
+              <div class="mini-label">Dataset</div>
+              <div class="mini-value">MIRA-EDITING · 150K samples</div>
+              <div class="mini-chip">Multi-step trajectories</div>
+            </div>
+          </div>
+          <div class="hero-orbit"></div>
+        </aside>
+      </section>
+
+      <!-- Abstract -->
+      <section id="abstract">
+        <h2 class="section-title">Abstract</h2>
+        <div class="card">
+          <p>
+            Instruction-guided image editing allows users to modify images with natural language
+            prompts, but existing diffusion-based editors often struggle when instructions are long,
+            compositional, or context dependent. They tend to drift semantically or miss fine-grained
+            constraints.
+          </p>
+          <p>
+            MIRA is a lightweight multimodal agent that performs editing via an
+            <em>iterative</em> perception–reasoning–action loop rather than a single-shot prompt. At
+            each step, the model observes the original image, the current edited image, and the
+            complex instruction, then predicts the next atomic edit or a stop signal. An external
+            editor executes the atomic instruction, and the updated image is fed back for the next
+            decision.
+          </p>
+          <p>
+            Paired with open-source editing models such as Flux.1-Kontext, Step1X-Edit, and
+            Qwen-Image-Edit, MIRA significantly boosts semantic consistency and perceptual quality,
+            reaching or surpassing proprietary systems like GPT-Image and Nano-Banana on challenging
+            benchmarks.
+          </p>
+        </div>
+      </section>
+
+      <!-- Highlights -->
+      <section id="highlights">
+        <h2 class="section-title">Highlights</h2>
+        <p class="section-subtitle">
+          Key contributions of MIRA and its training ecosystem.
+        </p>
+        <div class="two-col">
+          <div class="card">
+            <h3 class="section-title" style="font-size:15px;margin-bottom:6px;">Model</h3>
+            <ul>
+              <li>
+                <strong>Lightweight, plug-and-play agent</strong> built on Qwen2.5-VL, operating
+                purely through atomic edit instructions.
+              </li>
+              <li>
+                <strong>Closed-loop reasoning</strong>: each decision is conditioned on the latest
+                visual feedback, reducing error accumulation from earlier steps.
+              </li>
+              <li>
+                <strong>Modular tool use</strong>: supports interchangeable editing backbones
+                without requiring large toolchains or complex orchestration.
+              </li>
+            </ul>
+            <div class="taglist">
+              <span class="tag">Vision–Language Agent</span>
+              <span class="tag">Instruction Following</span>
+              <span class="tag">Tool Use</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="section-title" style="font-size:15px;margin-bottom:6px;">Training & Data</h3>
+            <ul>
+              <li>
+                <strong>MIRA-EDITING</strong>: 150K multimodal trajectories with complex
+                instructions and multi-step editing sequences.
+              </li>
+              <li>
+                <strong>Two-stage training</strong>: Supervised fine-tuning + GRPO-based
+                reinforcement learning with a composite reward.
+              </li>
+              <li>
+                <strong>Reward design</strong>: open-source EditScore-based semantic and perceptual
+                scores guide policy improvement.
+              </li>
+            </ul>
+            <div class="taglist">
+              <span class="tag">SFT</span>
+              <span class="tag">GRPO</span>
+              <span class="tag">EditScore</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Framework -->
+      <section id="framework">
+        <h2 class="section-title">Framework</h2>
+        <p class="section-subtitle">
+          MIRA as an iterative vision–language agent for instruction-guided image editing.
+        </p>
+        <div class="card">
+          <p>
+            Given an original image <code>I₀</code> and a complex instruction <code>C</code>, MIRA
+            maintains an intermediate edited image <code>Iₜ₋₁</code>. At each iteration:
+          </p>
+          <ul>
+            <li>
+              The policy <code>π</code> receives
+              <code>(I₀, Iₜ₋₁, C)</code> and outputs an <strong>atomic edit instruction</strong>
+              <code>uₜ</code>.
+            </li>
+            <li>
+              An external image editor <code>E</code> (e.g., Flux.1-Kontext) executes
+              <code>uₜ</code>, producing a new image <code>Iₜ</code>.
+            </li>
+            <li>
+              A termination controller decides whether to <code>continue</code> or
+              <code>&lt;STOP&gt;</code>.
+            </li>
+          </ul>
+          <p>
+            This loop continues until the global goal encoded by <code>C</code> is satisfied. Unlike
+            pre-planned, open-loop pipelines, MIRA can detect mis-executed edits and issue corrective
+            instructions, making it naturally robust to backend model errors.
+          </p>
+
+          <pre><code># Pseudocode example of MIRA-style editing loop
+
+I0 = load_image("input.png")
+C  = "Change the white stove to black, make the floor wooden, and turn the cabinets brown."
+
+I  = I0
+while True:
+    u = mira_policy(I0, I, C)      # atomic instruction
+    if u == "&lt;STOP&gt;":
+        break
+    I = editing_model(I, u)        # e.g., Flux.1-Kontext, Step1X-Edit, Qwen-Image-Edit
+
+save(I, "output.png")</code></pre>
+        </div>
+      </section>
+
+      <!-- Dataset -->
+      <section id="dataset">
+        <h2 class="section-title">MIRA-EDITING Dataset</h2>
+        <p class="section-subtitle">
+          A 150K-sample dataset tailored for multi-step, instruction-based image editing.
+        </p>
+        <div class="card">
+          <ul>
+            <li>
+              <strong>Instruction aggregation</strong>: multi-turn editing sessions (e.g., from
+              SeedEdit) are merged into single complex instructions, with permutations to enrich
+              compositional structures.
+            </li>
+            <li>
+              <strong>Two-level rewriting</strong>: both atomic edits and aggregated instructions are
+              paraphrased for linguistic diversity.
+            </li>
+            <li>
+              <strong>Candidate generation & ranking</strong>: strong open-source editors generate
+              multiple trajectories; ViEscore-based models rank them, and the best is kept as
+              supervision.
+            </li>
+          </ul>
+          <p>
+            Each dataset entry includes the input image, a high-quality edited trajectory, the
+            complex instruction, and its variants, all decomposed into start, continue, and stop
+            samples for training the iterative policy.
+          </p>
+        </div>
+      </section>
+
+      <!-- Results -->
+      <section id="results">
+        <h2 class="section-title">Results</h2>
+        <p class="section-subtitle">
+          MIRA consistently improves semantic consistency and perceptual quality when plugged into
+          open-source editors.
+        </p>
+        <div class="card">
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="metric-label">Semantic Consistency</div>
+              <div class="metric-value">↑ up to +15%</div>
+              <div class="metric-desc">
+                Gains on GPT-SC / Gemini-SC / Qwen-SC over base models.
+              </div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Perceptual Quality</div>
+              <div class="metric-value">Cleaner edits</div>
+              <div class="metric-desc">
+                ARNIQA & TOPIQ improvements despite multi-step editing.
+              </div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Backbones</div>
+              <div class="metric-value">Flux · Step1X · Qwen</div>
+              <div class="metric-desc">
+                All benefit from the same MIRA policy without retraining editors.
+              </div>
+            </div>
+          </div>
+
+          <p style="margin-top:10px;">
+            On a 500-sample benchmark constructed from MagicBrush and CompBench subsets, MIRA-enhanced
+            models narrow the gap to GPT-Image and Nano-Banana, while remaining fully open-source and
+            modular.
+          </p>
+
+          <p style="margin-top:6px;">
+            Qualitative comparisons in the paper further show that MIRA can:
+          </p>
+          <ul>
+            <li>Follow long, multi-object instructions faithfully.</li>
+            <li>Gradually refine layouts and appearances with visible intermediate states.</li>
+            <li>Issue corrective edits when backend models make mistakes (e.g., recoloring a fridge
+              back to white after an unintended change).</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- BibTeX -->
+      <section id="bibtex">
+        <h2 class="section-title">BibTeX</h2>
+        <div class="card">
+          <pre><code>@article{zeng2025mira,
+  title   = {MIRA: Multimodal Iterative Reasoning Agent for Image Editing},
+  author  = {Zeng, Ziyun and Hua, Hang and Luo, Jiebo},
+  journal = {arXiv preprint arXiv:YYYY.YYYYY},
+  year    = {2025}
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section id="contact">
+        <h2 class="section-title">Contact</h2>
+        <div class="card">
+          <p>
+            For questions, implementation details, or collaboration, please reach out to the authors
+            via their institutional email addresses or open an issue on the project repository.
+          </p>
+        </div>
+      </section>
+
+      <div class="footer">
+        Temporary project page for MIRA · Built for GitHub Pages. Customize links, images, and
+        content as the code and dataset are released.
+      </div>
+    </main>
+  </div>
+</body>
+</html>
